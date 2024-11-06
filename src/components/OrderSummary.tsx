@@ -1,14 +1,25 @@
 import React from 'react';
 import { FiClock } from 'react-icons/fi'; // Make sure to install react-icons
 import { useNavigate } from 'react-router-dom';
+import { ethers } from 'ethers';
+import { useState } from 'react';
 
 interface OrderSummaryProps {
   selectedCurrency: string;
   formIsValid: boolean;
+  amount: string; // Số tiền cần thanh toán
+  userInfo: any; // Thông tin người dùng từ form
 }
 
-export const OrderSummary: React.FC<OrderSummaryProps> = ({ selectedCurrency, formIsValid }) => {
+export const OrderSummary: React.FC<OrderSummaryProps> = ({
+  selectedCurrency,
+  formIsValid,
+  amount,
+  userInfo
+}) => {
   const navigate = useNavigate();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState('');
 
   const orderDetails = {
     items: [
@@ -48,8 +59,49 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({ selectedCurrency, fo
     }).format(amount);
   };
 
-  const handlePayment = () => {
-    navigate('/connect-wallet');
+  const handlePayment = async () => {
+    setIsProcessing(true);
+    setError('');
+    try {
+      if (!('ethereum' in window)) {
+        throw new Error('MetaMask is not installed');
+      }
+      // Get user's wallet address
+      const accounts = await (window.ethereum as any).request({ 
+        method: 'eth_requestAccounts' 
+      });
+      const userAddress = accounts[0];
+
+      // Tạo transaction params
+      const transactionParameters = {
+        to: '0xE5f5e391BAcaf7fBCD67f569cb11e6F62A037918', // Địa chỉ ví nhận tiền
+        from: userAddress, // Địa chỉ ví người dùng
+        value: ethers.parseEther(amount).toString(), // Chuyển số tiền sang hex
+      };
+
+      // Gửi request hiển thị popup MetaMask
+      const txHash = await (window.ethereum as any).request({
+        method: 'eth_sendTransaction',
+        params: [transactionParameters],
+      });
+
+      // Nếu transaction được confirm
+      if (txHash) {
+        // Gọi API backend của bạn
+        // await api.pay({ transactionHash: txHash, ... });
+        console.log('Transaction hash:', txHash);
+      }
+
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      if (error.code === 4001) {
+        setError('Transaction rejected by user.');
+      } else {
+        setError(error.message || 'Payment failed');
+      }
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -121,19 +173,27 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({ selectedCurrency, fo
 
         {/* Payment Button */}
         <button
-          type="button"
-          className="w-full bg-blue-600 text-white py-4 rounded-lg font-medium 
-                   hover:bg-blue-700 transition-colors mt-6 disabled:bg-gray-400 
-                   disabled:cursor-not-allowed"
-          disabled={!selectedCurrency || !formIsValid}
           onClick={handlePayment}
+          disabled={!selectedCurrency || !formIsValid || isProcessing}
+          className={`
+            w-full py-4 rounded-lg font-medium
+            ${isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}
+            text-white transition-colors
+            disabled:bg-gray-400 disabled:cursor-not-allowed
+          `}
         >
-          {!formIsValid 
-            ? 'Please Fill All Required Fields'
-            : selectedCurrency 
-              ? 'Complete Payment' 
-              : 'Select Payment Method'
-          }
+          {isProcessing ? (
+            <span className="flex items-center justify-center">
+              Processing...
+              {/* Có thể thêm loading spinner */}
+            </span>
+          ) : !formIsValid ? (
+            'Please Fill All Required Fields'
+          ) : !selectedCurrency ? (
+            'Select Payment Method'
+          ) : (
+            'Proceed to Payment'
+          )}
         </button>
 
         {/* Additional Information */}

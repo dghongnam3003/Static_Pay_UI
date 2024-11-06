@@ -40,6 +40,8 @@ const Checkout = () => {
               <OrderSummary 
                 selectedCurrency={selectedCurrency}
                 formIsValid={formData.isValid}
+                amount="0.1"
+                userInfo={formData}
               />
             </div>
           </div>
