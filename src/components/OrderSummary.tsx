@@ -104,6 +104,19 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
     }
   };
 
+  const handleProceedToPayment = () => {
+    // Lưu thông tin thanh toán vào localStorage hoặc state management
+    const paymentInfo = {
+      amount,
+      currency: selectedCurrency,
+      userInfo
+    };
+    localStorage.setItem('paymentInfo', JSON.stringify(paymentInfo));
+    
+    // Chuyển hướng đến trang connect wallet
+    navigate('/connect-wallet');
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Order Summary</h2>
@@ -173,27 +186,21 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
 
         {/* Payment Button */}
         <button
-          onClick={handlePayment}
-          disabled={!selectedCurrency || !formIsValid || isProcessing}
+          onClick={handleProceedToPayment}
+          disabled={!selectedCurrency || !formIsValid}
           className={`
             w-full py-4 rounded-lg font-medium
-            ${isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}
+            bg-blue-600 hover:bg-blue-700
             text-white transition-colors
             disabled:bg-gray-400 disabled:cursor-not-allowed
           `}
         >
-          {isProcessing ? (
-            <span className="flex items-center justify-center">
-              Processing...
-              {/* Có thể thêm loading spinner */}
-            </span>
-          ) : !formIsValid ? (
-            'Please Fill All Required Fields'
-          ) : !selectedCurrency ? (
-            'Select Payment Method'
-          ) : (
-            'Proceed to Payment'
-          )}
+          {!formIsValid 
+            ? 'Please Fill All Required Fields'
+            : !selectedCurrency 
+              ? 'Select Payment Method'
+              : 'Proceed to Payment'
+          }
         </button>
 
         {/* Additional Information */}
