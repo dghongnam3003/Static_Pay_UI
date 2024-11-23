@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import * as ethers from 'ethers';
+import { HttpAgent, Actor } from '@dfinity/agent';
+// Import IDL của canister
+// import { idlFactory } from '../canister/idl'; // Thay đổi ��ường dẫn nếu cần
 
 export const PaymentConfirmation = () => {
   const navigate = useNavigate();
@@ -12,39 +14,36 @@ export const PaymentConfirmation = () => {
     setError('');
 
     try {
-      // Lấy thông tin thanh toán từ localStorage
+      // Retrieve payment information from localStorage
       const paymentInfo = JSON.parse(localStorage.getItem('paymentInfo') || '{}');
-      // Check if ethereum object exists
-      if (!(window as any).ethereum) {
-        throw new Error('MetaMask is not installed. Please install MetaMask to continue.');
+      const amount = Number(paymentInfo.amount);
+
+      // Check if Plug wallet is installed
+      if (!window.ic || !window.ic.plug) {
+        throw new Error('Plug wallet is not installed. Please install it to proceed.');
       }
-      
-      const accounts = await (window as any).ethereum.request({
-        method: 'eth_requestAccounts' 
-      });
-      const userAddress = accounts[0];
 
-      // Tạo transaction
-      const transactionParameters = {
-        to: '0xE5f5e391BAcaf7fBCD67f569cb11e6F62A037918',
-        from: userAddress,
-        value: ethers.parseEther(paymentInfo.amount).toString(),
-      };
+      // Request connection to Plug wallet if not already connected
+      const isConnected = await window.ic.plug.isConnected();
+      if (!isConnected) {
+        await window.ic.plug.requestConnect();
+      }
 
-      // Gửi transaction
-      const txHash = await (window as any).ethereum.request({
-        method: 'eth_sendTransaction',
-        params: [transactionParameters],
+      // Request transfer using Plug wallet
+      const transferResult = await window.ic.plug.requestTransfer({
+        to: 'wxani-naaaa-aaaab-qadgq-cai', // Replace with the recipient's principal ID
+        amount: amount * 1e8, // Amount in e8s (1 ICP = 1e8 e8s)
       });
 
-      if (txHash) {
+      if (transferResult?.transactionId) {
+        // Payment successful
         localStorage.removeItem('paymentInfo');
-        // Có thể chuyển đến trang success hoặc hiển thị thông báo
-        console.log('Payment successful!', txHash);
+        navigate('/success'); // Navigate to the success page
+      } else {
+        setError('Payment failed.');
       }
-
     } catch (error: any) {
-      setError(error.message || 'Payment failed');
+      setError(error.message || 'Payment failed.');
       console.error(error);
     } finally {
       setIsProcessing(false);
@@ -56,21 +55,16 @@ export const PaymentConfirmation = () => {
       <div className="max-w-2xl w-full mx-4">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="text-center">
-            <div className="mb-4 text-green-500">
-              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold mb-4">Ví MetaMask đã được kết nối!</h2>
+            <h2 className="text-2xl font-bold mb-4">Connect PLug Wallet and continue!</h2>
             <p className="text-gray-600 mb-8">
-              Bạn có thể tiếp tục quá trình thanh toán
+              You can proceed with the payment.
             </p>
             <button
               onClick={handlePayment}
               disabled={isProcessing}
               className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
             >
-              {isProcessing ? 'Đang xử lý...' : 'Tiến hành thanh toán'}
+              {isProcessing ? 'Processing...' : 'Proceed to Payment'}
             </button>
             {error && (
               <div className="mt-4 text-red-600">
@@ -82,4 +76,4 @@ export const PaymentConfirmation = () => {
       </div>
     </div>
   );
-}; 
+};

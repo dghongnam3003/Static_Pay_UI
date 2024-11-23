@@ -42,6 +42,22 @@ const Checkout = () => {
                 formIsValid={formData.isValid}
                 amount="0.1"
                 userInfo={formData}
+                bill={{
+                  id: "ce16246fd8bc0021120ee7c11ef23b1b",
+                  status: "Pending",
+                  requested_info: [],
+                  updated_at: 1732338536589712324,
+                  payment_link: "https://z7chj-7qaaa-aaaab-qacbq-cai.icp0.io/ce16246fd8bc0021120ee7c11ef23b1b",
+                  merchant_id: "77n4l-nnxup-jikoj-hmtxh-3meid-zqymz-snol6-krksu-7tbkb-avto4-xqe",
+                  pricing_type: "fixed_price",
+                  name: "Tes",
+                  local_price: {
+                    currency: "ICP",
+                    amount: "1"
+                  },
+                  description: "TestCheckout",
+                  created_at: 1732338536589712324
+                }}
               />
             </div>
           </div>

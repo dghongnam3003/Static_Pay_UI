@@ -12,7 +12,7 @@ export const PaymentMethod: React.FC<PaymentMethodProps> = ({
   const currencies = [
     { id: 'btc', name: 'BTC', icon: '₿' },
     { id: 'eth', name: 'ETH', icon: 'Ξ' },
-    { id: 'usdc', name: 'USDT', icon: '$' },
+    { id: 'usdt', name: 'USDT', icon: '$' },
     { id: 'icp', name: 'ICP', icon: '🔥' },
   ];
 

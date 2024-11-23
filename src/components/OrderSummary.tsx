@@ -3,38 +3,58 @@ import { FiClock } from 'react-icons/fi'; // Make sure to install react-icons
 import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import { useState } from 'react';
+import { Actor, HttpAgent } from '@dfinity/agent';
 
 interface OrderSummaryProps {
   selectedCurrency: string;
   formIsValid: boolean;
   amount: string; // Số tiền cần thanh toán
   userInfo: any; // Thông tin người dùng từ form
+  bill: {
+    id: string;
+    status: string;
+    requested_info: any[];
+    updated_at: number;
+    payment_link: string;
+    merchant_id: string;
+    pricing_type: string;
+    name: string;
+    local_price: {
+      currency: string;
+      amount: string;
+    };
+    description: string;
+    created_at: number;
+  };
 }
 
 export const OrderSummary: React.FC<OrderSummaryProps> = ({
   selectedCurrency,
   formIsValid,
   amount,
-  userInfo
+  userInfo,
+  bill,
 }) => {
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
 
   const orderDetails = {
+    name: bill.name,
     items: [
-      { name: 'Product Name', price: 95.00, quantity: 1 },
-      { name: 'Processing Fee', price: 5.00, quantity: 1 },
+      // { name: 'Product Name', price: bill.name, quantity: 1 },
+      { name: 'Product Price' , price: parseFloat(bill.local_price.amount), quantity: 1 },
+      { name: 'Processing Fee', price: 0.00, quantity: 1 },
     ],
     shipping: 0.00,
-    tax: 10.00,
-    total: 110.00,
+    tax: 0.00,
+    total: parseFloat(bill.local_price.amount),
     // Mock exchange rates (in reality, these would come from an API)
     exchangeRates: {
-      btc: 0.0023,
-      eth: 0.042,
-      usdc: 110.00,
-      icp: 15.047,
+      btc: 0.0000980 * parseFloat(bill.local_price.amount),
+      eth: 0.002985 * parseFloat(bill.local_price.amount),
+      usdt: 11.029 * parseFloat(bill.local_price.amount),
+      icp: parseFloat(bill.local_price.amount),
     }
   };
 
@@ -45,7 +65,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
     const symbol = {
       btc: 'BTC',
       eth: 'ETH',
-      usdc: 'USDC',
+      usdt: 'USDT',
       icp: 'ICP',
     }[selectedCurrency];
 
@@ -107,22 +127,37 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
   const handleProceedToPayment = () => {
     // Lưu thông tin thanh toán vào localStorage hoặc state management
     const paymentInfo = {
-      amount,
+      amount: bill.local_price.amount,
       currency: selectedCurrency,
       userInfo
     };
     localStorage.setItem('paymentInfo', JSON.stringify(paymentInfo));
     
-    // Chuyển hướng đến trang connect wallet
+    // Chuyển hướng đến trang kết nối ví Plug Wallet
     navigate('/connect-wallet');
   };
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Order Summary</h2>
-      
+      <h2 className="text-2xl font-bold">Bill Information</h2>
+
+      {/* Hiển thị thông tin bill
+      <div className="space-y-2">
+        <p><strong>Mã Bill:</strong> {bill.id}</p>
+        <p><strong>Trạng thái:</strong> {bill.status}</p>
+        <p><strong>Sản phẩm:</strong> {bill.name}</p>
+        <p><strong>Mô tả:</strong> {bill.description}</p>
+        <p><strong>Giá:</strong> {bill.local_price.amount} {bill.local_price.currency}</p>
+        <p><strong>Link Thanh Toán:</strong> <a href={bill.payment_link} target="_blank" rel="noopener noreferrer">{bill.payment_link}</a></p>
+      </div> */}
+
+      <div className="space-y-2">
+        <p><strong>Product Name:</strong> {bill.name}</p>
+      </div>
+
       {/* Order Items */}
       <div className="space-y-4">
+        {}
         {orderDetails.items.map((item, index) => (
           <div key={index} className="flex justify-between items-center">
             <div className="space-y-1">
@@ -133,7 +168,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
                 </span>
               )}
             </div>
-            <span className="text-gray-800">{formatUSD(item.price)}</span>
+            <span className="text-gray-800">{item.price} {bill.local_price.currency}</span>
           </div>
         ))}
       </div>
@@ -143,7 +178,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
         {/* Subtotal */}
         <div className="flex justify-between text-gray-600 mb-2">
           <span>Subtotal</span>
-          <span>{formatUSD(orderDetails.items.reduce((acc, item) => acc + item.price, 0))}</span>
+          <span>{orderDetails.items.reduce((acc, item) => acc + item.price, 0)} {bill.local_price.currency}</span>
         </div>
 
         {/* Shipping */}
@@ -155,13 +190,13 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
         {/* Tax */}
         <div className="flex justify-between text-gray-600 mb-4">
           <span>Estimated Tax</span>
-          <span>{formatUSD(orderDetails.tax)}</span>
+          <span>{orderDetails.tax} {bill.local_price.currency}</span>
         </div>
 
         {/* Total */}
         <div className="flex justify-between font-bold text-lg border-t border-gray-200 pt-4">
           <span>Total</span>
-          <span>{formatUSD(orderDetails.total)}</span>
+          <span>{bill.local_price.amount} {bill.local_price.currency}</span>
         </div>
 
         {/* Crypto Amount */}

@@ -11,6 +11,7 @@ function App() {
         <Route path="/" element={<Checkout />} />
         <Route path="/connect-wallet" element={<ConnectWallet />} />
         <Route path="/payment-confirmation" element={<PaymentConfirmation />} />
+        {/* Thêm trang success nếu cần */}
       </Routes>
     </Router>
   );
