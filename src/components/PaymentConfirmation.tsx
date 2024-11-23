@@ -24,18 +24,28 @@ export const PaymentConfirmation = () => {
       }
 
       // Request connection to Plug wallet if not already connected
-      const isConnected = await window.ic.plug.isConnected();
+      const isConnected = await window.ic.plug.requestConnect();
       if (!isConnected) {
-        await window.ic.plug.requestConnect();
+        throw new Error('Failed to connect to Plug wallet.');
       }
 
-      // Request transfer using Plug wallet
-      const transferResult = await window.ic.plug.requestTransfer({
-        to: 'wxani-naaaa-aaaab-qadgq-cai', // Replace with the recipient's principal ID
-        amount: amount * 1e8, // Amount in e8s (1 ICP = 1e8 e8s)
+      // Create agent and get the ledger canister
+      const agent = await window.ic.plug.getAgent();
+      const ledgerCanister = await window.ic.plug.createActor({
+        canisterId: 'ryjl3-tyaaa-aaaaa-aaaba-cai' // ICP Ledger canister ID
       });
 
-      if (transferResult?.transactionId) {
+      // Execute transfer using the ledger canister
+      const result = await ledgerCanister.transfer({
+        to: 'mdwwn-niaaa-aaaab-qabta-cai',
+        amount: { e8s: BigInt(amount * 1e8) },
+        fee: { e8s: BigInt(10000) },
+        memo: BigInt(0),
+        from_subaccount: [],
+        created_at_time: []
+      });
+
+      if (result.Ok) {
         // Payment successful
         localStorage.removeItem('paymentInfo');
         navigate('/success'); // Navigate to the success page
